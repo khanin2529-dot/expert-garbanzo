@@ -74,9 +74,26 @@ def login():
         
         user = auth_manager.authenticate(username, password)
         if not user:
+            # บันทึก failed login
+            db_manager.add_audit_log(
+                action="LOGIN_FAILED",
+                username=username,
+                details={"reason": "Invalid credentials"}
+            )
             return jsonify({"error": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"}), 401
         
         token = auth_manager.create_token(username)
+        
+        # บันทึก successful login
+        db_manager.add_audit_log(
+            action="LOGIN_SUCCESS",
+            username=username,
+            details={"role": user['role']}
+        )
+        
+        # บันทึก session
+        expires_at = (datetime.now() + timedelta(hours=24)).isoformat()
+        db_manager.add_session(username, token, expires_at)
         
         return jsonify({
             "success": True,
@@ -89,6 +106,9 @@ def login():
     except Exception as e:
         logger.error(f"❌ ข้อผิดพลาด: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+from datetime import timedelta
 
 
 @app.route('/register', methods=['POST'])
@@ -106,6 +126,13 @@ def register():
             return jsonify({"error": "ต้องระบุ username และ password"}), 400
         
         if auth_manager.register_user(username, password, role):
+            # บันทึก audit log
+            db_manager.add_audit_log(
+                action="USER_REGISTERED",
+                username=request.current_user['username'],
+                details={"new_user": username, "role": role}
+            )
+            
             return jsonify({
                 "success": True,
                 "message": f"สมัครผู้ใช้ {username} สำเร็จ",
@@ -114,6 +141,146 @@ def register():
             }), 201
         else:
             return jsonify({"error": "สมัครผู้ใช้ไม่สำเร็จ"}), 400
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ===== Profile Management =====
+
+@app.route('/profile', methods=['GET'])
+@require_auth
+def get_profile():
+    """ดึงโปรไฟล์ของผู้ใช้ปัจจุบัน"""
+    try:
+        username = request.current_user['username']
+        profile = db_manager.get_profile(username)
+        
+        if not profile:
+            return jsonify({"error": "ไม่พบโปรไฟล์"}), 404
+        
+        return jsonify({
+            "success": True,
+            "profile": profile
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/profile', methods=['PUT'])
+@require_auth
+def update_profile():
+    """อัปเดตโปรไฟล์"""
+    try:
+        username = request.current_user['username']
+        data = request.get_json()
+        
+        if db_manager.update_profile(username, **data):
+            db_manager.add_audit_log(
+                action="PROFILE_UPDATED",
+                username=username,
+                details=data
+            )
+            
+            profile = db_manager.get_profile(username)
+            return jsonify({
+                "success": True,
+                "message": "อัปเดตโปรไฟล์สำเร็จ",
+                "profile": profile
+            }), 200
+        else:
+            return jsonify({"error": "อัปเดตโปรไฟล์ไม่สำเร็จ"}), 400
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ===== Data Export =====
+
+@app.route('/export/data', methods=['GET'])
+@require_auth
+@require_role('admin')
+def export_all_data():
+    """ส่งออกข้อมูลทั้งหมด (Admin only)"""
+    try:
+        export_file = db_manager.export_all_data()
+        
+        db_manager.add_audit_log(
+            action="DATA_EXPORTED",
+            username=request.current_user['username'],
+            details={"type": "all_data"}
+        )
+        
+        return send_file(export_file, as_attachment=True)
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/export/user', methods=['GET'])
+@require_auth
+def export_user_data():
+    """ส่งออกข้อมูลของผู้ใช้"""
+    try:
+        username = request.current_user['username']
+        export_file = db_manager.export_user_data(username)
+        
+        db_manager.add_audit_log(
+            action="USER_DATA_EXPORTED",
+            username=username,
+            details={}
+        )
+        
+        return send_file(export_file, as_attachment=True)
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ===== Audit Logs =====
+
+@app.route('/audit-logs', methods=['GET'])
+@require_auth
+@require_role('admin')
+def get_audit_logs():
+    """ดึง audit logs (Admin only)"""
+    try:
+        username = request.args.get('username')
+        limit = int(request.args.get('limit', 100))
+        
+        logs = db_manager.get_audit_logs(username=username, limit=limit)
+        
+        return jsonify({
+            "success": True,
+            "count": len(logs),
+            "logs": logs
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"❌ ข้อผิดพลาด: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ===== Statistics =====
+
+@app.route('/statistics', methods=['GET'])
+@require_auth
+@require_role('admin')
+def get_statistics():
+    """ดึงสถิติ (Admin only)"""
+    try:
+        stats = db_manager.get_statistics()
+        
+        return jsonify({
+            "success": True,
+            "statistics": stats
+        }), 200
     
     except Exception as e:
         logger.error(f"❌ ข้อผิดพลาด: {e}")
