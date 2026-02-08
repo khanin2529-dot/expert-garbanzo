@@ -10,6 +10,7 @@
 
 | Commit | สิ่งที่เพิ่มเติม | Status |
 |--------|------------------|--------|
+| 3c84317 | 🔐 Verification + Profile Sharing | ✅ |
 | decffb8 | 📚 Database Guide | ✅ |
 | 59f9db7 | 💾 Database + Export System | ✅ |
 | 2190ca1 | 🔐 Authentication + Role-Based Access | ✅ |
@@ -160,6 +161,19 @@ curl -H "Authorization: Bearer $TOKEN" \
 - ✅ Auto-start on Boot
 - ✅ Health Checks
 - ✅ Logging
+
+---
+### 5. ✅ Verification & Profile Sharing System
+- **verification.py** - VerificationManager
+- **verification_routes.py** - API Routes
+- **Security Features**:
+  - `POST /verify/send-code` - ส่งรหัสยืนยัน (6 digits)
+  - `POST /verify/confirm-code` - ยืนยันรหัสกับผู้ใช้
+  - `GET /verify/status` - ตรวจสอบสถานะ ✅ Verified Badge
+  - `POST /profile/share-request` - ขออนุญาติแชร์โปรไฟล์ (ต้องยืนยันก่อน)
+  - `POST /profile/share-approve` - เจ้าของอนุมัติด้วยรหัสความปลอดภัย
+  - `POST /profile/share-reject` - ปฏิเสธการแชร์
+  - `GET /profile/shared-with-me` - ดูโปรไฟล์ที่ได้รับแชร์
 
 ---
 

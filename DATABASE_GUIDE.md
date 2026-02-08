@@ -234,6 +234,93 @@ echo "✅ ส่งออกข้อมูล $(date +%Y-%m-%d\ %H:%M:%S)"
 ```
 
 ## ⚠️ Data Protection
+### Verification & Profile Sharing
+
+#### ส่งรหัสยืนยัน
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  http://localhost:5000/verify/send-code
+```
+
+#### ยืนยันรหัส
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"123456"}' \
+  http://localhost:5000/verify/confirm-code
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "ยืนยันตัวตนสำเร็จ ✅",
+  "verified": true
+}
+```
+
+#### ตรวจสอบสถานะการยืนยัน
+```bash
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:5000/verify/status
+```
+
+#### ขออนุญาติแชร์โปรไฟล์ (ต้องยืนยันก่อน)
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"recipient":"jane"}' \
+  http://localhost:5000/profile/share-request
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "ขออนุญาติแชร์โปรไฟล์ไปยัง jane สำเร็จ",
+  "security_code": "ABC123XYZ"
+}
+```
+
+#### อนุมัติแชร์โปรไฟล์ (เจ้าของโปรไฟล์)
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"security_code":"ABC123XYZ"}' \
+  http://localhost:5000/profile/share-approve
+```
+
+#### ปฏิเสธแชร์โปรไฟล์
+```bash
+curl -X POST -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"security_code":"ABC123XYZ"}' \
+  http://localhost:5000/profile/share-reject
+```
+
+#### ดูโปรไฟล์ที่ได้รับแชร์
+```bash
+curl -H "Authorization: Bearer TOKEN" \
+  http://localhost:5000/profile/shared-with-me
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "count": 2,
+  "shared_profiles": [
+    {
+      "from_user": "john",
+      "profile": {...},
+      "shared_at": "2024-01-15T10:30:00",
+      "status": "approved"
+    }
+  ]
+}
+```
+
+## ⚠️ Data Protection
 
 1. **Backup Regularly** - ส่งออกข้อมูลทุกวัน
 2. **Secure Export** - ใช้ HTTPS ในโปรดัคชั่น
