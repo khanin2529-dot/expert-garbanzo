@@ -647,5 +647,18 @@ if __name__ == '__main__':
         ]
     )
     
+    # นำเข้า Database และ Verification
+    from database import DatabaseManager
+    from verification import VerificationManager
+    from verification_routes import register_all_verification_routes
+    
+    # สร้าง instance
+    db_manager = DatabaseManager()
+    verification_manager = VerificationManager(db_manager)
+    
+    # ลงทะเบียน verification routes
+    register_all_verification_routes(app, verification_manager, db_manager, require_auth)
+    
     logger.info("🚀 เริ่ม API Server ที่ http://localhost:5000")
+    logger.info("✅ เพิ่มเสร็จ: Verification Routes และ Profile Sharing")
     app.run(debug=False, host='0.0.0.0', port=5000)

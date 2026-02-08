@@ -129,6 +129,8 @@ class DatabaseManager:
                 "department": "",
                 "avatar": "",
                 "bio": "",
+                "verified": False,
+                "verified_at": None,
                 "created_at": datetime.now().isoformat(),
                 "updated_at": datetime.now().isoformat()
             }
