@@ -1,0 +1,17 @@
+[Unit]
+Description=ผู้เชี่ยวชาญถั่วซิกฟี - API Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/expert-garbanzo
+Environment="PATH=/opt/expert-garbanzo/venv/bin"
+ExecStart=/opt/expert-garbanzo/venv/bin/python api.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
