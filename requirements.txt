@@ -1,0 +1,7 @@
+schedule==1.2.0
+requests==2.31.0
+python-dotenv==1.0.0
+click==8.1.7
+Flask==3.0.0
+watchdog==3.0.0
+psutil==5.9.6
